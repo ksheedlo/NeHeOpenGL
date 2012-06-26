@@ -1,5 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <time.h>
+#include <sys/time.h>
 
 #if defined(__APPLE__) || defined(MACOSX)
     #include <GLUT/glut.h>
@@ -10,6 +12,17 @@
     #include <GL/gl.h>
     #include <GL/glu.h>
 #endif
+
+#define FRAMERATE_FPS 60
+#define REDRAW_PERIOD_NS 1000000000 / FRAMERATE_FPS
+
+/* Returns: the time difference, in us */
+long timediff(const struct timeval *start, const struct timeval *end){
+    return 1000000 * (end->tv_sec - start->tv_sec) + 
+        (end->tv_usec - start->tv_usec);
+}
+
+struct timeval last_render;
 
 /* Global angular state. This is bad, bad, BAD. But not worth refactoring for
  * the sake of a tutorial exercise. */
@@ -33,6 +46,10 @@ void InitGL(int Width, int Height)	        // We call this right after our OpenG
 }
 
 void draw_scene(){
+    struct timeval render_time;
+    long wait_time;
+    struct timespec wait_spec;
+
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     glLoadIdentity();
     glTranslatef(-1.5f, 0.0f, -6.0f);
@@ -126,8 +143,18 @@ void draw_scene(){
     glEnd();
     glFlush();
 
-    rtri += 0.2f;
-    rquad -= 0.15f;
+    rtri += 0.8f;
+    rquad -= 0.6f;
+
+    gettimeofday(&render_time, NULL);
+    wait_time = REDRAW_PERIOD_NS - (1000 * timediff(&last_render, &render_time));
+    last_render.tv_sec = render_time.tv_sec;
+    last_render.tv_usec = render_time.tv_usec;
+
+    wait_spec.tv_nsec = wait_time % 1000000000;
+    wait_spec.tv_sec = wait_time / 1000000000;
+    nanosleep(&wait_spec, NULL);
+
     glutPostRedisplay();
 }
 
@@ -159,6 +186,7 @@ int main(int argc, char **argv){
 
     glClearColor(0.0,0.0,0.0,0.0);
     InitGL(640, 480);
+    gettimeofday(&last_render, NULL);
     glutMainLoop();
     
     return 0;

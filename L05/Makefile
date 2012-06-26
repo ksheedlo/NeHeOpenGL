@@ -13,7 +13,7 @@ exercise.o: exercise.c
 ifeq ($(SYSNAME),Darwin)
 	$(CC) $(CFLAGS) $(OSXFLAGS) -c $^ 
 else
-    	$(CC) $(CFLAGS) -c $^
+	$(CC) $(CFLAGS) -c $^
 endif
 
 exercise: exercise.o
